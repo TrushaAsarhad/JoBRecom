@@ -9,6 +9,7 @@ data = pd.read_csv('job_data.csv')
 
 # Define the job recommendation function
 def get_recommendations(job_title, cosine_sim=cosine_sim):
+    # Check if the job title exists in the data
     if job_title not in data['Job Title'].values:
         return pd.DataFrame(columns=['Job Title', 'Company Name', 'Location', 'skills'])
 
@@ -43,3 +44,7 @@ if st.button("Get Recommendations"):
             st.write("No recommendations found. Please try another job title.")
     else:
         st.error("Please enter a job title.")
+
+# For debugging: Display available job titles
+if st.checkbox("Show available job titles"):
+    st.write(data['Job Title'].unique())

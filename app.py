@@ -2,29 +2,44 @@ import streamlit as st
 from joblib import load
 import pandas as pd
 
-# Load your models
+# Load your models and data
 tfidf = load('tfidf_vectorizer.pkl')
 cosine_sim = load('cosine_similarity.pkl')
 data = pd.read_csv('job_data.csv')
 
-# Define your job recommendation function
+# Define the job recommendation function
 def get_recommendations(job_title, cosine_sim=cosine_sim):
-  # ... (your recommendation logic here)
-  return data[['Job Title', 'Company Name', 'Location', 'skills']].iloc[job_indices]
+    if job_title not in data['Job Title'].values:
+        return pd.DataFrame(columns=['Job Title', 'Company Name', 'Location', 'skills'])
 
-# Streamlit App
-st.title("Job Recommendation Tool")
+    # Get the index of the job that matches the title
+    idx = data[data['Job Title'] == job_title].index[0]
 
-job_title = st.text_input("Enter a Job Title:", key="job_title")
+    # Get the pairwise similarity scores of all jobs with the given job
+    sim_scores = list(enumerate(cosine_sim[idx]))
 
-# Display a progress bar while fetching recommendations
-with st.spinner("Finding similar jobs..."):
-  if st.button("Recommend Similar Jobs"):
-    recommendations = get_recommendations(job_title)
-    st.success("Done!")
+    # Sort the jobs based on similarity scores
+    sim_scores = sorted(sim_scores, key=lambda x: x[1], reverse=True)
 
-# Display recommendations or error message
-if recommendations.empty:  # Now `recommendations` should be defined
-    st.write("No similar jobs found!")
-else:
-    st.table(recommendations)
+    # Get the indices of the top 10 most similar jobs
+    job_indices = [i[0] for i in sim_scores[1:11]]
+
+    # Return the top 10 most similar jobs
+    return data[['Job Title', 'Company Name', 'Location', 'skills']].iloc[job_indices]
+
+# Streamlit UI
+st.title("Job Recommendation System")
+
+# Input for job title
+job_title = st.text_input("Enter Job Title")
+
+# Button to get recommendations
+if st.button("Get Recommendations"):
+    if job_title:
+        recommendations = get_recommendations(job_title)
+        if not recommendations.empty:
+            st.write(recommendations)
+        else:
+            st.write("No recommendations found. Please try another job title.")
+    else:
+        st.error("Please enter a job title.")
